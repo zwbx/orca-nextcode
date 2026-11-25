@@ -39,6 +39,7 @@ export default function activate(orca) {
     let raw
     try { raw = JSON.parse(await readPrivateFile(data.path)) } catch { fail('invalid_config', 'The configuration file must contain valid JSON.') }
     const config = parseConfig(raw, data.expectedOrigin)
+    if ((config.sshHost ?? '') !== (data.expectedSshHost ?? '')) fail('ssh_mismatch', 'Confirm the SSH execution host from your instance configuration.')
     await orca.storage.set(CONFIG, config)
     revision += 1
     issuedLinks.clear()
@@ -46,7 +47,7 @@ export default function activate(orca) {
   }))
   orca.panels.handle('credential', data => serialize(async () => {
     const config = await configuration()
-    if (!config || secureOrigin(data.expectedOrigin) !== config.origin) fail('origin_mismatch', 'Confirm the configured credential destination.')
+    if (!config || secureOrigin(data.expectedOrigin) !== config.origin || (config.sshHost ?? '') !== (data.expectedSshHost ?? '')) fail('origin_mismatch', 'Confirm the configured credential destination.')
     if ((await orca.host.call('secrets.protection')).status !== 'os-keyring') fail('secrets_unavailable', 'Encrypted OS keyring protection is unavailable. A credential cannot be saved.')
     const token = data.path ? (await readPrivateFile(data.path)).trim() : data.token?.trim()
     if (!token || token.length > 8192 || /[\r\n]/.test(token)) fail('invalid_token', 'Provide a valid credential.')

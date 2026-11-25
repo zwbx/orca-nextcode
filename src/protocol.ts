@@ -32,8 +32,8 @@ export interface Associations { [url: string]: string }
 declare module 'orca' {
   interface PluginRequests {
     'session': { output: Session }
-    'configure': { input: { path: string; expectedOrigin: string }; output: Session }
-    'credential': { input: { path?: string; token?: string; expectedOrigin: string }; output: Session }
+    'configure': { input: { path: string; expectedOrigin: string; expectedSshHost?: string }; output: Session }
+    'credential': { input: { path?: string; token?: string; expectedOrigin: string; expectedSshHost?: string }; output: Session }
     'forget': { output: Session }
     'list': { input: { kind: Kind; project: string; cursor: string | null }; output: ListResult }
     'workspaces': { output: { workspaces: Workspace[]; truncated: boolean; associations: Associations } }

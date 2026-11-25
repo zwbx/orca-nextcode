@@ -15,6 +15,7 @@ const truncated = atom(false)
 const associations = atom<Associations>({})
 const workspace = atom('')
 const origin = atom('')
+const sshHost = atom('')
 const configPath = atom('')
 const tokenPath = atom('')
 const token = atom('')
@@ -48,6 +49,7 @@ async function load(more = false): Promise<void> {
 async function acceptSession(value: Session): Promise<void> {
   set(session, value)
   set(origin, value.origin)
+  set(sshHost, value.sshHost ?? '')
   set(settings, !value.configured || !value.credential)
   set(project, value.projects[0]?.id ?? '')
   set(kind, value.kinds.includes('mr') ? 'mr' : 'issue')
@@ -56,12 +58,12 @@ async function acceptSession(value: Session): Promise<void> {
   if (value.configured && value.credential) await load()
 }
 async function configure(): Promise<void> {
-  try { await acceptSession(await plugin.request('configure', { path: read(configPath), expectedOrigin: read(origin) })); set(configPath, '') }
+  try { await acceptSession(await plugin.request('configure', { path: read(configPath), expectedOrigin: read(origin), expectedSshHost: read(sshHost) || undefined })); set(configPath, '') }
   catch { set(notice, 'Configuration import failed. Check the file, schema and explicitly confirmed origin.') }
 }
 async function saveCredential(): Promise<void> {
   try {
-    const result = await plugin.request('credential', { path: read(tokenPath) || undefined, token: read(token) || undefined, expectedOrigin: read(origin) })
+    const result = await plugin.request('credential', { path: read(tokenPath) || undefined, token: read(token) || undefined, expectedOrigin: read(origin), expectedSshHost: read(sshHost) || undefined })
     await acceptSession(result)
   } catch { set(notice, 'Credential import failed. Confirm the origin, input and OS keyring protection.') }
   finally { set(token, ''); set(tokenPath, '') }
@@ -100,6 +102,7 @@ export default function Panel() {
       <Stack gap="sm">
         <Text muted size="sm">Import a private JSON configuration from this Orca host. Use your authorized instance’s API documentation.</Text>
         <Input label="Confirmed HTTPS origin" placeholder="https://nextcode.example.com" value={read(origin)} onChange={v => set(origin, v)} />
+        <Input label="Confirmed SSH request host (optional)" value={read(sshHost)} onChange={v => set(sshHost, v)} />
         <Input label="Configuration file" placeholder="/absolute/path/instance.json" value={read(configPath)} onChange={v => set(configPath, v)} />
         <Button disabled={!read(configPath) || !read(origin)} onPress={configure}>Import configuration</Button>
         {state?.configured && <Text size="sm">Credential destination {state.origin}</Text>}
@@ -124,7 +127,7 @@ export default function Panel() {
         <Text>{failure.message}</Text><Text muted size="xs">{failure.code}</Text>
         <Button variant="ghost" onPress={() => load(!!read(items).length)}>Retry</Button>
       </Callout>}
-      <Table label="NextCode items" columns={[{ key: 'number', label: 'Number', width: 'xs' }, { key: 'title', label: 'Title' }, { key: 'status', label: 'Status', width: 'sm' }]} rows={read(items).map(i => ({ key: i.id, cells: { number: i.number, title: i.title, status: i.status } }))} selectionMode="single" selected={read(selected) ? [read(selected)] : []} loading={read(busy)} hasMore={!!read(next)} emptyText={failure ? 'The request failed.' : 'No items returned.'} onLoadMore={() => load(true)} onSelectionChange={v => {
+      <Table label="NextCode items" columns={[{ key: 'number', label: 'No.', width: 'xs' }, { key: 'title', label: 'Title' }, { key: 'status', label: 'Status', width: 'sm' }]} rows={read(items).map(i => ({ key: i.id, cells: { number: i.number, title: i.title, status: i.status } }))} selectionMode="single" selected={read(selected) ? [read(selected)] : []} loading={read(busy)} emptyText={failure ? 'The request failed.' : 'No items returned.'} onSelectionChange={v => {
         const id = v.keys[0] ?? ''
         set(selected, id)
         const item = read(items).find(i => i.id === id)
@@ -141,6 +144,7 @@ export default function Panel() {
         <Button variant="ghost" disabled={!read(workspace)} onPress={openWorkspace}>Open workspace</Button>
         <Button variant="ghost" onPress={() => refreshWorkspaces().catch(showError)}>Refresh workspaces</Button>
       </Row>
+      <Text muted size="xs">Workspaces are supplied by this Orca host. Paired hosts appear when the Host API exposes them.</Text>
       {(read(truncated) || read(workspaces).length > 499) && <Text tone="warning" size="xs">Workspace results are truncated. Some workspaces may be unavailable in this selector.</Text>}
     </Stack>}
     {read(notice) && <Callout tone="neutral"><Text>{read(notice)}</Text></Callout>}
