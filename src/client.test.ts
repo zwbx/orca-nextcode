@@ -33,6 +33,22 @@ test('maps rows, empty lists, and cursor continuation with encoded query values'
   assert.equal(new URL(requestUrl).searchParams.get('after'), 'x&destination=other')
   assert.equal(redirect, 'manual')
 })
+test('empty and unsafe links never resolve to the instance home page', async () => {
+  const missing = { ...rows[0], url: '' }
+  const payload = (url: string) => transport({ data: { items: [{ ...missing, url }], next: null } })
+  const operation = { ...config.operations.mr!, detailPath: '$projectPath/item/$number' }
+  const mapped = parseConfig({ ...config, projects: [{ ...config.projects[0], detailPath: '/example/project' }], operations: { mr: operation } }, config.origin)
+  for (const [profile, url, expected] of [
+    [config, '', ''], [config, '  ', ''], [config, '/', ''],
+    [mapped, '', config.origin + '/example/project/item/!12'],
+    [mapped, 'https://other.example.com/item/12', '']
+  ] as const) {
+    const result = await listItems(profile, 'synthetic-credential', 'mr', 'demo-project', null, payload(url))
+    assert.equal(result.ok, true)
+    if (result.ok) assert.equal(result.page.items[0].url, expected)
+  }
+})
+
 test('handles page-based pagination and detects broken continuation', async () => {
   const paged = { ...config, operations: { mr: { ...config.operations.mr!, pagination: { mode: 'page' as const, total: 'data.total' }, body: { page: '$cursor' } } } }
   assert.deepEqual(await listItems(paged, 'synthetic-credential', 'mr', 'demo-project', null, transport({ data: { items: rows, total: 3 } })), { ok: true, page: { items: demoItems, next: '2' } })

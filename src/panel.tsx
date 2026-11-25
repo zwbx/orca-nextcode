@@ -137,7 +137,7 @@ export default function Panel() {
     </Stack>}
     {active && <Stack gap="sm">
       <Heading level={3}>{active.title}</Heading>
-      {active.url ? <Link href={active.url}>Open original details</Link> : <Text tone="warning">A safe same-origin details link was unavailable.</Text>}
+      {active.url ? <Link href={active.url}>Open original details</Link> : <Text tone="warning">Details link unavailable. This item needs a safe same-origin URL or a private details path mapping.</Text>}
       <Select label="Orca workspace" value={read(workspace) || '__none__'} options={[{ value: '__none__', label: 'No association' }, ...read(workspaces).slice(0, 499).map(w => ({ value: w.id, label: `${w.name} · ${w.host}` }))]} onChange={v => set(workspace, v === '__none__' ? '' : v)} />
       <Row gap="sm" wrap>
         <Button disabled={!active.url} onPress={associate}>Save association</Button>

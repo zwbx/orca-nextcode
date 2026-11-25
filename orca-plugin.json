@@ -2,7 +2,7 @@
   "manifestVersion": 2,
   "id": "nextcode",
   "name": "NextCode",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Read NextCode items using your private instance configuration and associate them with Orca workspaces.",
   "engines": {
     "orca": ">=1.4.248"

@@ -30,7 +30,7 @@ export default function activate(orca) {
     const config = await configuration()
     const { status } = await orca.host.call('secrets.protection')
     return {
-      configured: !!config, origin: config?.origin ?? '', ...(config?.sshHost ? { sshHost: config.sshHost } : {}), projects: config?.projects ?? [], kinds: Object.keys(config?.operations ?? {}),
+      configured: !!config, origin: config?.origin ?? '', ...(config?.sshHost ? { sshHost: config.sshHost } : {}), projects: config?.projects.map(({ id, label }) => ({ id, label })) ?? [], kinds: Object.keys(config?.operations ?? {}),
       protection: status, credential: !!(config && await orca.secrets.get(secretKey(config)))
     }
   }

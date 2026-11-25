@@ -5,6 +5,7 @@ export interface Operation {
   path: string
   query?: Record<string, string>
   body?: Json
+  detailPath?: string
   items: string
   fields: { id: string; number: string; title: string; status: string; url: string }
   pagination?: { mode: 'cursor' | 'page'; next?: string; hasMore?: string; total?: string; start?: number }
@@ -14,7 +15,7 @@ export interface InstanceConfig {
   origin: string
   sshHost?: string
   auth: { header: string; prefix: string }
-  projects: { id: string; label: string }[]
+  projects: { id: string; label: string; detailPath?: string }[]
   operations: Partial<Record<Kind, Operation>>
   error?: { path: string; code: string; message: string; policyPatterns?: string[] }
   pageSize?: number

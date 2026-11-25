@@ -55,6 +55,12 @@ export function parseConfig(raw: unknown, expectedOrigin: string): InstanceConfi
       return fail('invalid_pagination', 'Pagination requires an explicit next cursor, total, or continuation flag.')
     }
   }
+  if (config.projects.some(p => p.detailPath !== undefined && (typeof p.detailPath !== 'string' || !p.detailPath.startsWith('/') || p.detailPath.startsWith('//') || /[\\?#]/.test(p.detailPath) || p.detailPath.endsWith('/')))) {
+    return fail('invalid_project_path', 'Project details paths must be same-origin absolute paths without a trailing slash.')
+  }
+  if (Object.values(config.operations).some(op => op?.detailPath !== undefined && (typeof op.detailPath !== 'string' || !op.detailPath.startsWith('/') && !op.detailPath.startsWith('$projectPath/') || op.detailPath.startsWith('//') || /[\\?#]/.test(op.detailPath) || !op.detailPath.includes('$number')))) {
+    return fail('invalid_detail_path', 'Details templates require a same-origin path and a $number placeholder.')
+  }
   if (config.error && (typeof config.error.path !== 'string' || typeof config.error.code !== 'string' || typeof config.error.message !== 'string' ||
       (config.error.policyPatterns && (!Array.isArray(config.error.policyPatterns) || config.error.policyPatterns.some(p => typeof p !== 'string' || !p))))) {
     return fail('invalid_error', 'Provide valid API error mappings.')
@@ -80,10 +86,10 @@ function substitute(value: Json, variables: Record<string, string | number>): Js
   return value
 }
 export function safeLink(value: unknown, origin: string): string {
-  if (typeof value !== 'string' || value.length > 4096) return ''
+  if (typeof value !== 'string' || !value.trim() || value.length > 4096) return ''
   try {
     const url = new URL(value, origin)
-    return url.origin === origin && !url.username && !url.password && url.protocol === 'https:' ? url.href : ''
+    return url.origin === origin && url.pathname !== '/' && !url.username && !url.password && url.protocol === 'https:' ? url.href : ''
   } catch { return '' }
 }
 function apiFailure(status: number, code: unknown, message: unknown, config: InstanceConfig): never {
@@ -99,7 +105,8 @@ export async function listItems(config: InstanceConfig, token: string, kind: Kin
   try {
     const operation = config.operations[kind]
     if (!operation) return fail('unsupported', 'This instance configuration has no authorized API for this item type.')
-    if (!config.projects.some(p => p.id === project)) return fail('invalid_project', 'Choose a configured project.')
+    const selectedProject = config.projects.find(p => p.id === project)
+    if (!selectedProject) return fail('invalid_project', 'Choose a configured project.')
     if (!token || /[\r\n]/.test(token)) return fail('missing_credential', 'Configure a credential for this exact origin.', 'authentication')
     if (cursor && (cursor.length > 4096 || /[\r\n]/.test(cursor))) return fail('invalid_cursor', 'Invalid continuation cursor.')
     const pageSize = config.pageSize ?? 25
@@ -129,7 +136,13 @@ export async function listItems(config: InstanceConfig, token: string, kind: Kin
     const items = rows.map(row => {
       const fields = Object.fromEntries(Object.entries(operation.fields).map(([key, path]) => [key, at(row, path)]))
       if (['id', 'number', 'title', 'status'].some(k => !['string', 'number'].includes(typeof fields[k]))) return fail('invalid_item', 'An item is missing required mapped fields.', 'response')
-      return { id: String(fields.id).slice(0, 512), number: String(fields.number).slice(0, 80), title: String(fields.title).slice(0, 1000), status: String(fields.status).slice(0, 100), url: safeLink(fields.url, config.origin) }
+      const template = operation.detailPath
+      const repoPath = selectedProject.detailPath
+      const sourceHasUrl = typeof fields.url === 'string' && !!fields.url.trim()
+      const fallback = template && (repoPath || !template.includes('$projectPath'))
+        ? template.replaceAll('$projectPath', repoPath ?? '').replaceAll('$number', encodeURIComponent(String(fields.number)))
+        : ''
+      return { id: String(fields.id).slice(0, 512), number: String(fields.number).slice(0, 80), title: String(fields.title).slice(0, 1000), status: String(fields.status).slice(0, 100), url: safeLink(sourceHasUrl ? fields.url : fallback, config.origin) }
     })
     let next: string | null = null
     const pagination = operation.pagination

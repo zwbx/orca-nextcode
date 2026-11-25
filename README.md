@@ -6,7 +6,7 @@ Requires Orca 1.4.248 or newer. The plugin runs a Node worker with access to its
 
 ## Install
 
-Run `orca plugin install zwbx/orca-nextcode@v0.1.0 --json`. Orca prints the exact approval required for the worker and workspace access. Approve that reviewed plugin using the command Orca returns.
+Run `orca plugin install zwbx/orca-nextcode@v0.1.1 --json`. Orca prints the exact approval required for the worker and workspace access. Approve that reviewed plugin using the command Orca returns.
 
 ## Connect
 
@@ -25,6 +25,8 @@ Dot-separated paths address response objects. An empty path addresses the respon
 
 Cursor pagination uses a `next` response path and an optional boolean `hasMore` path. Page pagination uses `total` or a boolean `hasMore`, with `start` defaulting to 1. Configure API error paths, including source-policy message patterns, so HTTP and application-level failures appear correctly.
 
+If an API returns an empty item URL, an operation can supply a private `detailPath` template. Use `$number` for the encoded item number and optionally `$projectPath` for the project’s private `detailPath`. A missing or unsafe link disables navigation.
+
 ### Request execution host
 
 If your instance requires a particular request environment, add `sshHost` with a trusted OpenSSH alias. That host needs Python 3 and trusted TLS certificates. SSH uses batch authentication and strict host-key verification. Request data and credentials travel through encrypted stdin to a single in-memory Python process. The remote process sends HTTPS requests directly. The plugin stores no remote credential files.
@@ -37,15 +39,15 @@ Instance configuration and workspace associations use plugin-private Orca storag
 
 Workspace associations live in this plugin’s storage. The selector shows the workspaces the current Orca Host API returns, including host labels. Paired-host visibility depends on the installed Orca runtime. Orca’s public plugin API exposes workspace selection and navigation. Native Tasks data-source registration is unavailable.
 
-## Version 0.1.0 validation
+## Version 0.1.1 validation
 
-MR list reading, pagination, status mapping, same-origin details links, encrypted credential storage and local workspace association were exercised against an authorized instance. Requests used a permitted SSH execution host.
+MR list reading, pagination, status mapping, details path resolution, encrypted credential storage and local workspace association were exercised against an authorized instance. Requests used a permitted SSH execution host.
 
 Issue reading was exercised with synthetic fixtures. This release requires users to supply an authorized Issue API mapping. Real Issue permissions have yet to be verified.
 
 Local workspace association was exercised with the desktop Host API. Paired-host selection was exercised with synthetic fixtures. The tested desktop runtime returned local workspaces, while its paired-host CLI returned additional remote workspaces. The plugin exposes the current Host API results and reports this scope in its interface.
 
-Eight regression tests cover request failures, pagination, retry, same-origin restrictions, credential origin and SSH binding, OS keyring refusal, and serialized association writes. Six render scenarios cover fresh, populated, empty, authentication, permission and source-policy states.
+Nine regression tests cover request failures, pagination, retry, same-origin restrictions, credential origin and SSH binding, OS keyring refusal, and serialized association writes. Six render scenarios cover fresh, populated, empty, authentication, permission and source-policy states.
 
 ## Development
 
