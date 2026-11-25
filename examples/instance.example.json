@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "origin": "https://nextcode.example.com",
+  "auth": { "header": "Authorization", "prefix": "Bearer " },
+  "projects": [{ "id": "demo-project", "label": "Example project" }],
+  "pageSize": 25,
+  "operations": {
+    "mr": {
+      "method": "POST", "path": "/example/read",
+      "body": { "project": "$project", "continuation": "$cursor", "limit": "$limit", "state": "$state" },
+      "items": "data.items",
+      "fields": { "id": "id", "number": "number", "title": "title", "status": "state", "url": "url" },
+      "pagination": { "mode": "cursor", "next": "data.next" }
+    }
+  },
+  "error": { "path": "error", "code": "code", "message": "message", "policyPatterns": ["request source is restricted"] }
+}

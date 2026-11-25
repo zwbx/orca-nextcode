@@ -1,0 +1,33 @@
+{
+  "manifestVersion": 2,
+  "id": "nextcode",
+  "name": "NextCode",
+  "version": "0.1.0",
+  "description": "Read NextCode items using your private instance configuration and associate them with Orca workspaces.",
+  "engines": {
+    "orca": ">=1.4.248"
+  },
+  "execution": "trusted-worker",
+  "pluginApi": 1,
+  "main": "src/worker.mjs",
+  "license": "MIT",
+  "contributes": {
+    "panels": [
+      {
+        "id": "nextcode",
+        "title": "NextCode",
+        "icon": "blocks",
+        "entry": "src/panel.tsx",
+        "ui": "components"
+      }
+    ]
+  },
+  "capabilities": [
+    {
+      "kind": "storage:own"
+    },
+    { "kind": "secrets:own" },
+    { "kind": "workspace:read" },
+    { "kind": "workspace:write" }
+  ]
+}
